@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "inquirer": "^10.2.2",
+    "jsdom": "^25.0.0"
+  }
+}
