@@ -1,4 +1,5 @@
-const { JSDOM } = require('jsdom')
+//const { JSDOM } = require('jsdom')
+const {Parser} = require('htmlparser2')
 
 const capturarDisciplinas = async (cookieAuth) => {
     const baseUrl = "https://pre.ufcg.edu.br:8443/ControleAcademicoOnline/Controlador"
@@ -23,7 +24,72 @@ const capturarDisciplinas = async (cookieAuth) => {
       throw error
     }
 }
+
+const extraiDisciplinas = async (cookieAuth) => {
+    try {
+      const dadosHtml = await capturarDisciplinas(cookieAuth);
+      
+      let disciplinas = [];
+      let currentDisciplina = {};
+      let isInTable = false;
+      let columnIndex = 0;
+      
+      const parser = new Parser(
+        {
+          onopentag(name, attributes) {
+            if (name === 'table') {
+              isInTable = true;
+            } else if (isInTable && (name === 'td' || name === 'th')) {
+              columnIndex++;
+            }
+          },
+          ontext(text) {
+            if (isInTable && columnIndex > 0) {
+              const trimmedText = text.trim();
+              if (trimmedText) {
+                switch (columnIndex) {
+                  case 2:
+                    currentDisciplina.codigo = trimmedText;
+                    break;
+                  case 3:
+                    currentDisciplina.nome = trimmedText;
+                    break;
+                  case 4:
+                    currentDisciplina.turma = trimmedText;
+                    break;
+                  case 5:
+                    currentDisciplina.horario = trimmedText;
+                    break;
+                }
+              }
+            }
+          },
+          onclosetag(tagname) {
+            if (tagname === 'table') {
+              isInTable = false;
+            } else if (tagname === 'tr' && isInTable) {
+              if (Object.keys(currentDisciplina).length === 4) {
+                disciplinas.push({ ...currentDisciplina });
+                currentDisciplina = {};
+              }
+              columnIndex = 0;
+            }
+          }
+        },
+        { decodeEntities: true }
+      );
   
+      parser.write(dadosHtml);
+      parser.end();
+  
+      return disciplinas;
+    } catch (error) {
+      console.error('Erro ao extrair disciplinas:', error);
+      return null;
+    }
+  };
+
+/*
 const extraiDisciplinas = async (cookieAuth) => {
     const dadosHtml = await capturarDisciplinas(cookieAuth)
 
@@ -55,6 +121,6 @@ const extraiDisciplinas = async (cookieAuth) => {
     });
 
     return disciplinas
-}
+}*/
   
 module.exports = extraiDisciplinas
