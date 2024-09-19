@@ -26,7 +26,6 @@ const capturarDisciplinas = async (cookieAuth) => {
   
 const extraiDisciplinas = async (cookieAuth) => {
     const dadosHtml = await capturarDisciplinas(cookieAuth)
-    console.log(dadosHtml)
 
     const dom = new JSDOM(dadosHtml)
     const doc = dom.window.document
