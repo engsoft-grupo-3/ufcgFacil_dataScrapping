@@ -33,6 +33,7 @@ const extraiDisciplinas = async (cookieAuth) => {
       let currentDisciplina = {};
       let isInTable = false;
       let columnIndex = 0;
+      let isCollectingHorario = false;
       
       const parser = new Parser(
         {
@@ -41,6 +42,10 @@ const extraiDisciplinas = async (cookieAuth) => {
               isInTable = true;
             } else if (isInTable && (name === 'td' || name === 'th')) {
               columnIndex++;
+              if (columnIndex === 5) {
+                isCollectingHorario = true;
+                currentDisciplina.horario = '';
+              }
             }
           },
           ontext(text) {
@@ -58,7 +63,9 @@ const extraiDisciplinas = async (cookieAuth) => {
                     currentDisciplina.turma = trimmedText;
                     break;
                   case 5:
-                    currentDisciplina.horario = trimmedText;
+                    if (isCollectingHorario) {
+                      currentDisciplina.horario += trimmedText + '\n';
+                    }
                     break;
                 }
               }
@@ -69,10 +76,14 @@ const extraiDisciplinas = async (cookieAuth) => {
               isInTable = false;
             } else if (tagname === 'tr' && isInTable) {
               if (Object.keys(currentDisciplina).length === 4) {
+                if (currentDisciplina.horario) {
+                  currentDisciplina.horario = currentDisciplina.horario.trim();
+                }
                 disciplinas.push({ ...currentDisciplina });
                 currentDisciplina = {};
               }
               columnIndex = 0;
+              isCollectingHorario = false;
             }
           }
         },
@@ -81,13 +92,15 @@ const extraiDisciplinas = async (cookieAuth) => {
   
       parser.write(dadosHtml);
       parser.end();
-  
+
+      disciplinas = disciplinas.slice(1)
       return disciplinas;
     } catch (error) {
       console.error('Erro ao extrair disciplinas:', error);
       return null;
     }
   };
+  
 
 /*
 const extraiDisciplinas = async (cookieAuth) => {
