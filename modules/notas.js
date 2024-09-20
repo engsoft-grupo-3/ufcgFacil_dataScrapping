@@ -1,4 +1,6 @@
-const { JSDOM } = require('jsdom')
+//const { JSDOM } = require('jsdom')
+const {Parser} = require('htmlparser2')
+const {DOMParser} = require('xmldom')
 
 const capturarNotas = async (disciplina, cookieAuth) => {
     const baseUrl = "https://pre.ufcg.edu.br:8443/ControleAcademicoOnline/Controlador"
@@ -23,38 +25,62 @@ const capturarNotas = async (disciplina, cookieAuth) => {
       }
 }
 
-const extraiNotas = async (disciplina, cookieAuth) => {
-    const dadosHtml = await capturarNotas(disciplina, cookieAuth)
-
-    //console.log(dadosHtml)
-
-    const dom = new JSDOM(dadosHtml)
-    const doc = dom.window.document
-    const table = doc.querySelector('table')
-
-    if(!table){
-        console.error('Erro: Nenhuma tabela encontrada')
-        return null;
+const cleanHtmlContent = (htmlContent) => {
+    // Remove todas as tags HTML
+    let cleanContent = htmlContent.replace(/<[^>]*>/g, '');
+    // Remove quebras de linha e espaços extras
+    cleanContent = cleanContent.replace(/\s+/g, ' ').trim();
+    // Pega apenas o primeiro texto antes de qualquer parêntese
+    cleanContent = cleanContent.split('(')[0].trim();
+    return cleanContent;
+  };
+  
+  const extraiNotas = async (disciplina, cookieAuth) => {
+    const dadosHtml = await capturarNotas(disciplina, cookieAuth);
+    // Regex para encontrar a tabela e suas linhas
+    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/i;
+    const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    const headerCellRegex = /<th[^>]*>([\s\S]*?)<\/th>/gi;
+    const dataCellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  
+    // Encontrar a tabela
+    const tableMatch = dadosHtml.match(tableRegex);
+    if (!tableMatch) {
+      throw new Error('Nenhuma tabela encontrada no HTML fornecido');
     }
-    
-    let notas = {}
-
-    const headers = table.getElementsByTagName('th')
-    const values = table.getElementsByTagName('td')
-
-    for(let i = 3; i < headers.length - 1; i++){
-        let key = headers[i].childNodes[0].nodeValue.trim().replace(/\s+/g, '').toLowerCase()
-        let value = values[i].textContent.replace(',', '.')
-
-        if (value === '') {
-            value = '0.0';
-        }
-
-        notas[key] = value
+  
+    const tableContent = tableMatch[1];
+    const rows = tableContent.match(rowRegex);
+  
+    if (!rows || rows.length !== 2) {
+      throw new Error('A tabela deve conter exatamente duas linhas (cabeçalho e dados)');
+    }
+  
+    // Extrair os cabeçalhos
+    let headers = [];
+    let headerMatch;
+    while ((headerMatch = headerCellRegex.exec(rows[0])) !== null) {
+      headers.push(cleanHtmlContent(headerMatch[1]));
+    }
+  
+    // Extrair os dados
+    let dataCells = [];
+    let dataMatch;
+    while ((dataMatch = dataCellRegex.exec(rows[1])) !== null) {
+      dataCells.push(cleanHtmlContent(dataMatch[1]));
     }
 
-    return notas
+    headers = headers.slice(3)
+    dataCells = dataCells.slice(3)
+    // Criar o objeto resultado
+    const result = {};
+    headers.forEach((header, index) => {
+      result[header] = dataCells[index].replace(',', '.');
+    });
 
-}
+   
+    return result;
+  };
+  
 
 module.exports = extraiNotas
