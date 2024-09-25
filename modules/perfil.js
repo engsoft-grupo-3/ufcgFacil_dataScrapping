@@ -1,5 +1,3 @@
-const { load } = require('cheerio')
-
 const capturarPerfil = async (cookieAuth) => {
   const baseUrl = "https://pre.ufcg.edu.br:8443/ControleAcademicoOnline/Controlador"
   const comando = `${baseUrl}?command=AlunoHistorico`
@@ -47,7 +45,7 @@ const alunoPerfil = async (cookieAuth) => {
         creditosPercentuais: match[6],
         quantidadeMinima: match[7],
         quantidadeIntegralizada: match[8],
-        quantidadePercentual: match[9]
+        quantidadePercentual: parseFloat(match[9])
       }
     } else {
       console.log('Informações de Execução Curricular não encontradas.');
