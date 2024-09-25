@@ -38,24 +38,17 @@ const alunoPerfil = async (cookieAuth) => {
     const match = dadosHtml.match(regex);
 
     if (match) {
-      const execucaoCurricular = {
-        cargaHoraria: {
-          minimo: match[1],
-          integralizado: match[2],
-          percentual: match[3]
-        },
-        creditos: {
-          minimo: match[4],
-          integralizado: match[5],
-          percentual: match[6]
-        },
-        quantidade: {
-          minimo: match[7],
-          integralizado: match[8],
-          percentual: match[9]
-        }
+      return {
+        cargaHorariaMinima: match[1],
+        cargaHorariaIntegralizada: match[2],
+        cargaHorariaPercentual: match[3],
+        creditosMinimos: match[4],
+        creditosIntegralizados: match[5],
+        creditosPercentuais: match[6],
+        quantidadeMinima: match[7],
+        quantidadeIntegralizada: match[8],
+        quantidadePercentual: match[9]
       }
-      return execucaoCurricular
     } else {
       console.log('Informações de Execução Curricular não encontradas.');
       return null
@@ -67,14 +60,33 @@ const alunoPerfil = async (cookieAuth) => {
   const curriculo = extractInfo(/<b>Curr[^<]*culo<\/b>:\s*(\d+)/);
   const situacao = extractInfo(/<b>Situa[^<]*<\/b>:\s*(.+)/);
   const cra = extractInfo(/<div class="col-md-2 col-sm-2 text-right"><b>CRA<\/b>:<\/div>\s*<div class="col-md-2 col-sm-2">(\d+,\d+)<\/div>/);
+  const {
+    cargaHorariaMinima,
+    cargaHorariaIntegralizada,
+    cargaHorariaPercentual,
+    creditosMinimos,
+    creditosIntegralizados,
+    creditosPercentuais,
+    quantidadeMinima,
+    quantidadeIntegralizada,
+    quantidadePercentual
+  } = extractExecucaoInfo()
 
   return {
     aluno: aluno,
     curso: curso,
     curriculo: curriculo,
     situacao: situacao,
-    cra: parseFloat(cra.replace(',', '.')),
-    execucao: extractExecucaoInfo()
+    cra: cra.replace(',', '.'),
+    cargaHorariaMinima: cargaHorariaMinima,
+    cargaHorariaIntegralizada: cargaHorariaIntegralizada,
+    cargaHorariaPercentual: cargaHorariaPercentual,
+    creditosMinimos: creditosMinimos,
+    creditosIntegralizados: creditosIntegralizados,
+    creditosPercentuais: creditosPercentuais,
+    quantidadeMinima:quantidadeMinima,
+    quantidadeIntegralizada: quantidadeIntegralizada,
+    quantidadePercentual: quantidadePercentual
   };
 }
 
